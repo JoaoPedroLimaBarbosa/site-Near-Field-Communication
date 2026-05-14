@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Near Field Communication</title>
+  <style>
+/* ── RESET ── */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+/* ── VARIÁVEIS ── */
+:root {
+  --blue:       #004080;
+  --blue-light: #0077cc;
+  --green:      #00aa88;
+  --bg:         #f4f7fb;
+  --white:      #ffffff;
+  --text:       #222;
+  --muted:      #555;
+  --border:     #dde4ef;
+  --card:       #ffffff;
+  --radius:     10px;
+  --header-h:   64px;
+  --shadow:     0 4px 20px rgba(0,0,0,.08);
+}
+
+[data-theme="dark"] {
+  --bg:     #0f1117;
+  --white:  #1a1d27;
+  --card:   #1e2130;
+  --text:   #e0e6f0;
+  --muted:  #8a9bb5;
+  --border: #2a3045;
+  --shadow: 0 4px 20px rgba(0,0,0,.4);
+}
+
+/* ── BASE ── */
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.75;
+  transition: background .3s, color .3s;
+}
+
+img {
+  display: block; width: 100%; max-width: 500px;
+  margin: 0 auto; border: 3px solid var(--blue);
+  border-radius: var(--radius); object-fit: cover;
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* ── PROGRESS BAR ── */
+.progress-bar {
+  position: fixed; top: 0; left: 0;
+  height: 3px; width: 0%;
+  background: linear-gradient(90deg, var(--green), var(--blue-light));
+  z-index: 9999; transition: width .1s linear;
+}
+
+/* ── HEADER ── */
+header {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: var(--header-h);
+  background: var(--blue);
+  z-index: 1000;
+  box-shadow: 0 2px 12px rgba(0,0,0,.25);
+}
+
+.container {
+  max-width: 1200px; margin: 0 auto;
+  padding: 0 24px; height: 100%;
+  display: flex; align-items: center;
+  justify-content: space-between; gap: 16px;
+}
+
+header h1 {
+  font-size: 1.2rem; font-weight: 700;
+  letter-spacing: .1em; color: white;
+  border: none; padding: 0; flex-shrink: 0;
+}
+
+nav ul {
+  list-style: none; display: flex;
+  flex-wrap: wrap; gap: 2px;
+}
+
+nav ul li a {
+  color: rgba(255,255,255,.85); font-size: .75rem;
+  padding: 6px 9px; border-radius: 6px;
+  transition: background .25s, color .25s; white-space: nowrap;
+}
+
+nav ul li a:hover,
+nav ul li a.active { background: var(--blue-light); color: white; }
+
+.burger {
+  display: none; flex-direction: column; gap: 5px;
+  background: none; border: none; cursor: pointer; padding: 4px; flex-shrink: 0;
+}
+.burger span {
+  display: block; width: 24px; height: 2px;
+  background: white; border-radius: 2px; transition: .3s;
+}
+
+.theme-btn {
+  background: rgba(255,255,255,.15); border: none;
+  border-radius: 50%; width: 36px; height: 36px;
+  font-size: 1rem; cursor: pointer; flex-shrink: 0;
+  transition: background .25s; color: white;
+}
+.theme-btn:hover { background: rgba(255,255,255,.25); }
+
+/* Botão reload */
+.reload-btn {
+  background: rgba(255,255,255,.15); border: none;
+  border-radius: 50%; width: 36px; height: 36px;
+  font-size: 1rem; cursor: pointer; flex-shrink: 0;
+  transition: background .25s; color: white;
+  display: flex; align-items: center; justify-content: center;
+}
+.reload-btn:hover { background: rgba(255,255,255,.25); }
+.reload-btn svg { width: 18px; height: 18px; fill: white; }
+
+/* ── HERO ── */
+.hero {
+  margin-top: var(--header-h);
+  background: linear-gradient(135deg, var(--blue) 0%, var(--blue-light) 60%, var(--green) 100%);
+  color: white; text-align: center;
+  padding: 100px 24px 80px;
+  position: relative; overflow: hidden;
+}
+.hero::after {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 60% 40%, rgba(255,255,255,.06) 0%, transparent 70%);
+}
+.hero-content { position: relative; z-index: 1; max-width: 700px; margin: 0 auto; }
+.hero h2 { font-size: clamp(1.8rem, 5vw, 3rem); color: white; border: none; margin-bottom: 16px; }
+.hero p  { font-size: clamp(.95rem, 2vw, 1.1rem); opacity: .9; margin-bottom: 32px; }
+.hero-btn {
+  display: inline-block; background: white; color: var(--blue);
+  font-weight: 700; padding: 12px 32px; border-radius: 30px;
+  transition: transform .25s, box-shadow .25s;
+  box-shadow: 0 4px 20px rgba(0,0,0,.2);
+}
+.hero-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,.25); }
+
+/* ── STATS ── */
+.stats-section {
+  background: var(--white); padding: 56px 24px;
+  box-shadow: var(--shadow);
+}
+.stats-grid {
+  max-width: 1000px; margin: 0 auto;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px;
+}
+.stat-card {
+  text-align: center; padding: 32px 16px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); border-top: 3px solid var(--green);
+  transition: transform .3s, box-shadow .3s;
+}
+.stat-card:hover { transform: translateY(-4px); box-shadow: var(--shadow); }
+.stat-icon { font-size: 2rem; margin-bottom: 10px; }
+.stat-num  { font-size: 2.4rem; font-weight: 700; color: var(--blue); line-height: 1; }
+.stat-unit { font-size: .85rem; color: var(--green); font-weight: 600; margin-bottom: 6px; }
+.stat-label { font-size: .8rem; color: var(--muted); }
+
+/* ── MAIN ── */
+main { max-width: 1100px; margin: 0 auto; padding: 0 24px 60px; }
+
+/* ── SECTIONS ── */
+section {
+  padding: 80px 0;
+  border-bottom: 1px solid var(--border);
+  scroll-margin-top: calc(var(--header-h) + 16px);
+}
+section:last-child { border-bottom: none; }
+
+h2 {
+  color: var(--blue); font-size: clamp(1.3rem, 3vw, 1.8rem);
+  margin-bottom: 20px; padding-bottom: 8px;
+  border-bottom: 2px solid var(--green); display: inline-block;
+}
+
+p { font-size: 1rem; color: var(--text); margin-bottom: 14px; }
+p:last-child { margin-bottom: 0; }
+ul, ol { padding-left: 22px; margin-bottom: 14px; }
+li { font-size: 1rem; line-height: 1.8; margin-bottom: 6px; }
+strong { color: var(--green); font-weight: 600; }
+em { color: var(--muted); }
+
+/* ── SECTION LAYOUT ── */
+.section-inner {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 60px; align-items: center;
+}
+.section-inner.reverse { direction: rtl; }
+.section-inner.reverse > * { direction: ltr; }
+.section-img img { max-width: 100%; }
+
+/* ── INFOGRÁFICO ── */
+.infographic {
+  display: flex; align-items: center; gap: 0;
+  margin-top: 28px; background: var(--card);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 24px 16px; justify-content: center;
+}
+.infog-device {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 8px; min-width: 80px;
+}
+.infog-icon  { font-size: 2.5rem; }
+.infog-label { font-size: .72rem; font-weight: 600; color: var(--blue); text-transform: uppercase; letter-spacing: .08em; }
+.infog-waves {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 4px; padding: 0 12px; flex: 1;
+}
+.wave {
+  width: 100%; height: 3px; border-radius: 2px;
+  background: linear-gradient(90deg, var(--green), var(--blue-light));
+  animation: waveAnim 1.4s ease-in-out infinite;
+  opacity: .7;
+}
+.wave:nth-child(2) { animation-delay: .2s; }
+.wave:nth-child(3) { animation-delay: .4s; }
+@keyframes waveAnim {
+  0%,100% { transform: scaleX(.6); opacity: .4; }
+  50%      { transform: scaleX(1);  opacity: 1;  }
+}
+.infog-arrow { font-size: .7rem; color: var(--green); font-weight: 600; margin-top: 4px; }
+
+/* ── TABELA ── */
+.table-wrap {
+  overflow-x: auto; margin-top: 32px;
+  border-radius: var(--radius); border: 1px solid var(--border);
+}
+table { width: 100%; border-collapse: collapse; background: var(--card); }
+thead { background: var(--blue); color: white; }
+th { padding: 14px 16px; font-size: .85rem; text-align: left; font-weight: 600; }
+td { padding: 12px 16px; font-size: .9rem; border-bottom: 1px solid var(--border); }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: rgba(0,64,128,.04); }
+.highlight { color: var(--green); font-weight: 700; }
+
+/* ── TIMELINE ── */
+.timeline {
+  position: relative; max-width: 760px; margin: 0 auto;
+  padding-left: 40px;
+}
+.timeline::before {
+  content: ''; position: absolute; left: 14px; top: 0; bottom: 0;
+  width: 2px; background: linear-gradient(to bottom, var(--green), var(--blue-light));
+}
+.tl-item {
+  position: relative; margin-bottom: 40px;
+  padding: 20px 24px; background: var(--card);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow); transition: transform .3s;
+}
+.tl-item:hover { transform: translateX(4px); }
+.tl-dot {
+  position: absolute; left: -33px; top: 24px;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--green); border: 3px solid var(--bg);
+  box-shadow: 0 0 0 2px var(--green);
+}
+.tl-year {
+  font-size: .75rem; font-weight: 700; color: var(--green);
+  letter-spacing: .1em; text-transform: uppercase; margin-bottom: 4px;
+}
+.tl-content strong { display: block; color: var(--blue); font-size: 1rem; margin-bottom: 4px; }
+.tl-content p { font-size: .9rem; color: var(--muted); margin: 0; }
+
+/* ── FAQ ACCORDION ── */
+.faq { max-width: 760px; margin: 0 auto; display: grid; gap: 10px; }
+.faq-item {
+  background: var(--card); border: 1px solid var(--border);
+  border-left: 4px solid var(--green); border-radius: var(--radius);
+  overflow: hidden;
+}
+.faq-q {
+  width: 100%; background: none; border: none; cursor: pointer;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 18px 20px; font-size: 1rem; font-weight: 600;
+  color: var(--blue); text-align: left; transition: background .2s;
+}
+.faq-q:hover { background: rgba(0,64,128,.04); }
+.faq-icon { font-size: 1.3rem; font-weight: 300; transition: transform .3s; flex-shrink: 0; }
+.faq-item.open .faq-icon { transform: rotate(45deg); }
+.faq-a {
+  max-height: 0; overflow: hidden;
+  transition: max-height .4s ease, padding .4s ease;
+  font-size: .95rem; color: var(--muted); padding: 0 20px;
+  line-height: 1.7;
+}
+.faq-item.open .faq-a { max-height: 300px; padding: 0 20px 18px; }
+
+/* ── QUIZ ── */
+.quiz-box {
+  max-width: 680px; margin: 0 auto;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 36px;
+  box-shadow: var(--shadow);
+}
+.quiz-progress {
+  height: 6px; background: var(--border);
+  border-radius: 3px; margin-bottom: 28px; overflow: hidden;
+}
+.quiz-progress-bar {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--green), var(--blue-light));
+  border-radius: 3px; transition: width .4s ease;
+}
+.quiz-q-num  { font-size: .78rem; color: var(--green); font-weight: 700; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 8px; }
+.quiz-q-text { font-size: 1.1rem; font-weight: 600; color: var(--blue); margin-bottom: 24px; line-height: 1.5; }
+.quiz-options { display: grid; gap: 10px; }
+.quiz-opt {
+  width: 100%; padding: 14px 18px; border-radius: var(--radius);
+  border: 2px solid var(--border); background: var(--bg);
+  text-align: left; font-size: .95rem; color: var(--text);
+  cursor: pointer; transition: border-color .2s, background .2s, transform .15s;
+}
+.quiz-opt:hover:not(:disabled) { border-color: var(--blue-light); background: rgba(0,119,204,.06); transform: translateX(3px); }
+.quiz-opt.correct  { border-color: var(--green); background: rgba(0,170,136,.1); color: var(--green); font-weight: 600; }
+.quiz-opt.wrong    { border-color: #e05555; background: rgba(224,85,85,.1); color: #e05555; }
+.quiz-opt:disabled { cursor: default; }
+.quiz-feedback { margin-top: 16px; padding: 12px 16px; border-radius: 8px; font-size: .9rem; font-weight: 500; }
+.quiz-feedback.ok  { background: rgba(0,170,136,.12); color: var(--green); }
+.quiz-feedback.err { background: rgba(224,85,85,.12);  color: #e05555; }
+.quiz-next {
+  margin-top: 20px; padding: 12px 28px;
+  background: var(--blue); color: white; border: none;
+  border-radius: var(--radius); font-size: .95rem;
+  font-weight: 600; cursor: pointer; transition: background .25s;
+}
+.quiz-next:hover { background: var(--blue-light); }
+.quiz-result { text-align: center; }
+.quiz-result .score { font-size: 3.5rem; font-weight: 700; color: var(--blue); line-height: 1; margin: 16px 0 8px; }
+.quiz-result .score-label { font-size: 1rem; color: var(--muted); margin-bottom: 24px; }
+.quiz-result .level { font-size: 1.1rem; font-weight: 600; color: var(--green); margin-bottom: 24px; }
+.quiz-restart {
+  padding: 12px 32px; background: var(--green); color: white;
+  border: none; border-radius: var(--radius); font-size: 1rem;
+  font-weight: 600; cursor: pointer; transition: opacity .25s;
+}
+.quiz-restart:hover { opacity: .85; }
+
+/* ── REFERÊNCIAS ── */
+#referencias ol { padding-left: 24px; }
+#referencias li { margin-bottom: 10px; font-size: .95rem; }
+
+/* ── FOOTER ── */
+footer {
+  background: var(--blue); color: white;
+  text-align: center; padding: 28px 24px;
+  font-size: .9rem; line-height: 1.8;
+}
+footer .nomes { font-size: .75rem; color: #b0d4f0; margin-top: 6px; }
+
+/* ── BOTÃO VOLTAR AO TOPO ── */
+.back-top {
+  position: fixed; bottom: 28px; right: 28px;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--blue); color: white; border: none;
+  font-size: 1.2rem; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,64,128,.3);
+  opacity: 0; pointer-events: none;
+  transition: opacity .3s, transform .3s;
+  z-index: 800;
+}
+.back-top.show { opacity: 1; pointer-events: auto; }
+.back-top:hover { transform: translateY(-3px); }
+
+/* ── REVEAL ── */
+.reveal {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity .7s ease, transform .7s ease;
+}
+.reveal.hidden {
+  opacity: 0;
+  transform: translateY(28px);
+}
+.reveal.vis {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── RESPONSIVO ── */
+@media (max-width: 1024px) {
+  nav {
+    display: none; position: fixed;
+    top: var(--header-h); left: 0; right: 0;
+    background: var(--blue);
+    padding: 16px 24px 24px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.3);
+    z-index: 999;
+  }
+  nav ul { flex-direction: column; gap: 4px; }
+  nav ul li a { display: block; font-size: .95rem; padding: 12px 14px; }
+  .burger { display: flex; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+nav.open { display: block !important; }
+
+@media (max-width: 860px) {
+  .section-inner,
+  .section-inner.reverse { grid-template-columns: 1fr; direction: ltr; gap: 32px; }
+  .section-img { order: -1; }
+}
+
+@media (max-width: 600px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .hero { padding: 60px 20px 50px; }
+  section { padding: 52px 0; }
+  .quiz-box { padding: 24px 18px; }
+  .timeline { padding-left: 28px; }
+  .timeline::before { left: 8px; }
+  .tl-dot { left: -27px; }
+}
+
+@media (max-width: 400px) {
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+}
+  </style>
+</head>
+<body>
+
+  <!-- BARRA DE PROGRESSO -->
+  <div class="progress-bar" id="progressBar"></div>
+
+  <!-- HEADER -->
+  <header id="hdr">
+    <div class="container">
+      <h1>NFC</h1>
+      <button class="burger" id="burger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+      <nav id="nav">
+        <ul>
+          <li><a href="#introducao">Introdução</a></li>
+          <li><a href="#stats">Dados</a></li>
+          <li><a href="#funcionamento">Funcionamento</a></li>
+          <li><a href="#seguranca">Segurança</a></li>
+          <li><a href="#comparacao">Comparação</a></li>
+          <li><a href="#timeline">História</a></li>
+          <li><a href="#futuro">Futuro</a></li>
+          <li><a href="#conclusao">Conclusão</a></li>
+          <li><a href="#perguntas">FAQ</a></li>
+          <li><a href="#quiz">Quiz</a></li>
+          <li><a href="#referencias">Referências</a></li>
+        </ul>
+      </nav>
+      <!-- BOTÃO RELOAD -->
+      <button class="reload-btn" id="reloadBtn" aria-label="Recarregar página" title="Recarregar página">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M17.65 6.35A7.96 7.96 0 0 0 12 4C7.58 4 4 7.58 4 12s3.58 8 8 8 8-3.58 8-8h-2c0 3.31-2.69 6-6 6s-6-2.69-6-6 2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L11 11h7V4l-2.35 2.35z"/>
+        </svg>
+      </button>
+      <button class="theme-btn" id="themeBtn" aria-label="Alternar tema">🌙</button>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-content">
+      <h2>Near Field Communication</h2>
+      <p>Comunicação por Campo de Proximidade — a tecnologia que conecta o mundo físico ao digital com apenas uma aproximação.</p>
+      <a href="#introducao" class="hero-btn">Explorar →</a>
+    </div>
+  </div>
+
+  <!-- CARDS DE ESTATÍSTICAS -->
+  <section id="stats" class="stats-section">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">📡</div>
+        <div class="stat-num" data-target="13.56">0</div>
+        <div class="stat-unit">MHz</div>
+        <div class="stat-label">Frequência de operação</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📏</div>
+        <div class="stat-num" data-target="10">0</div>
+        <div class="stat-unit">cm</div>
+        <div class="stat-label">Alcance máximo</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">⚡</div>
+        <div class="stat-num" data-target="424">0</div>
+        <div class="stat-unit">Kbps</div>
+        <div class="stat-label">Velocidade máxima</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🌍</div>
+        <div class="stat-num" data-target="2">0</div>
+        <div class="stat-unit">bi+</div>
+        <div class="stat-label">Dispositivos com NFC</div>
+      </div>
+    </div>
+  </section>
+
+  <main>
+
+    <!-- INTRODUÇÃO -->
+    <section id="introducao">
+      <div class="section-inner">
+        <div class="section-text reveal">
+          <h2>Introdução</h2>
+          <p>A tecnologia Near Field Communication (NFC) é uma forma de comunicação sem fio de curto alcance, permitindo a troca de dados entre dispositivos que estejam próximos, geralmente a uma distância de até 10 centímetros.</p>
+          <p>Sua aplicação se tornou popular em pagamentos por aproximação, cartões de transporte, controle de acesso e até automação residencial. Este site explica, de forma clara e detalhada, como essa tecnologia funciona, seus benefícios, desafios, segurança e perspectivas para o futuro.</p>
+        </div>
+        <div class="section-img reveal">
+          <img src="img/introducao.jpeg" alt="Introdução sobre NFC">
+        </div>
+      </div>
+    </section>
+
+    <!-- FUNCIONAMENTO -->
+    <section id="funcionamento" class="alt">
+      <div class="section-inner reverse">
+        <div class="section-text reveal">
+          <h2>Funcionamento</h2>
+          <p>O NFC opera com base na indução de campo eletromagnético. Existem dois dispositivos: um ativo e outro passivo. O dispositivo ativo gera um campo eletromagnético capaz de alimentar o dispositivo passivo, permitindo a troca de informações sem bateria.</p>
+          <p>Ele opera na frequência de <strong>13,56 MHz</strong> e permite taxas entre <strong>106 Kbps e 424 Kbps</strong>. Existem três modos principais:</p>
+          <ul>
+            <li><strong>Modo Leitor/Gravador:</strong> O smartphone lê ou escreve dados em uma tag NFC.</li>
+            <li><strong>Modo Peer-to-Peer:</strong> Dois dispositivos trocam informações de forma bidirecional.</li>
+            <li><strong>Modo Emulação de Cartão:</strong> O smartphone funciona como um cartão para pagamentos.</li>
+          </ul>
+
+          <!-- INFOGRÁFICO ANIMADO -->
+          <div class="infographic">
+            <div class="infog-device active-dev">
+              <div class="infog-icon">📱</div>
+              <div class="infog-label">Ativo</div>
+            </div>
+            <div class="infog-waves">
+              <div class="wave"></div>
+              <div class="wave"></div>
+              <div class="wave"></div>
+              <div class="infog-arrow">⚡ Campo EM</div>
+            </div>
+            <div class="infog-device passive-dev">
+              <div class="infog-icon">💳</div>
+              <div class="infog-label">Passivo</div>
+            </div>
+          </div>
+        </div>
+        <div class="section-img reveal">
+          <img src="img/funcionamento.jpeg" alt="Funcionamento do NFC">
+        </div>
+      </div>
+    </section>
+
+    <!-- SEGURANÇA -->
+    <section id="seguranca">
+      <div class="section-inner">
+        <div class="section-text reveal">
+          <h2>Segurança e Privacidade</h2>
+          <p>Embora o NFC seja seguro devido ao seu curto alcance, ele não está completamente isento de riscos. A segurança é fundamental em pagamentos, autenticação e compartilhamento de dados sensíveis.</p>
+          <p><strong>Principais ameaças:</strong></p>
+          <ul>
+            <li><strong>Interceptação (Eavesdropping):</strong> Captura de dados durante a comunicação.</li>
+            <li><strong>Modificação de Dados:</strong> Alteração das informações transmitidas.</li>
+            <li><strong>Skimming:</strong> Leitura não autorizada de dados NFC.</li>
+            <li><strong>Relay Attack:</strong> Conexão falsa entre leitor legítimo e vítima distante.</li>
+            <li><strong>Clonagem:</strong> Dispositivo NFC clonado para se passar por outro.</li>
+          </ul>
+          <p><strong>Medidas de proteção:</strong></p>
+          <ul>
+            <li>Criptografia forte (AES, RSA).</li>
+            <li>Autenticação por biometria ou senha.</li>
+            <li>Limitação do alcance físico.</li>
+            <li>Sistemas antifraude nas operadoras.</li>
+          </ul>
+        </div>
+        <div class="section-img reveal">
+          <img src="img/seguranca.jpeg" alt="Segurança no NFC">
+        </div>
+      </div>
+    </section>
+
+    <!-- COMPARAÇÃO -->
+    <section id="comparacao" class="alt">
+      <div class="section-inner reverse">
+        <div class="section-text reveal">
+          <h2>Comparação com Outras Tecnologias</h2>
+          <p>O NFC é frequentemente comparado com QR Code, Bluetooth e RFID. Veja a tabela comparativa:</p>
+        </div>
+        <div class="section-img reveal">
+          <img src="img/comparacao.jpeg" alt="Comparação NFC">
+        </div>
+      </div>
+      <div class="table-wrap reveal">
+        <table>
+          <thead>
+            <tr>
+              <th>Característica</th>
+              <th>🔵 NFC</th>
+              <th>📷 QR Code</th>
+              <th>🔷 Bluetooth</th>
+              <th>📶 RFID</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Alcance</td><td class="highlight">até 10 cm</td><td>variável</td><td>até 10 m+</td><td>até 100 m</td></tr>
+            <tr><td>Velocidade</td><td class="highlight">424 Kbps</td><td>baixa</td><td>alta</td><td>média</td></tr>
+            <tr><td>Segurança</td><td class="highlight">alta</td><td>baixa</td><td>média</td><td>média</td></tr>
+            <tr><td>Pareamento</td><td class="highlight">não</td><td>não</td><td>sim</td><td>não</td></tr>
+            <tr><td>Consumo</td><td class="highlight">muito baixo</td><td>nenhum</td><td>alto</td><td>baixo</td></tr>
+            <tr><td>Bidirecional</td><td class="highlight">sim</td><td>não</td><td>sim</td><td>não</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- LINHA DO TEMPO -->
+    <section id="timeline">
+      <div class="section-text reveal" style="text-align:center;margin-bottom:48px">
+        <h2>História e Evolução do NFC</h2>
+        <p>Da criação ao uso massivo em bilhões de dispositivos ao redor do mundo.</p>
+      </div>
+      <div class="timeline">
+        <div class="tl-item reveal">
+          <div class="tl-dot"></div>
+          <div class="tl-year">1983</div>
+          <div class="tl-content">
+            <strong>Origem do RFID</strong>
+            <p>Charles Walton patenteia o RFID, tecnologia base do NFC.</p>
+          </div>
+        </div>
+        <div class="tl-item reveal">
+          <div class="tl-dot"></div>
+          <div class="tl-year">2002</div>
+          <div class="tl-content">
+            <strong>Criação do NFC</strong>
+            <p>Sony e Philips desenvolvem juntos o padrão NFC.</p>
+          </div>
+        </div>
+        <div class="tl-item reveal">
+          <div class="tl-dot"></div>
+          <div class="tl-year">2004</div>
+          <div class="tl-content">
+            <strong>NFC Forum</strong>
+            <p>Criação do NFC Forum para padronizar a tecnologia globalmente.</p>
+          </div>
+        </div>
+        <div class="tl-item reveal">
+          <div class="tl-dot"></div>
+          <div class="tl-year">2006</div>
+          <div class="tl-content">
+            <strong>Primeiro celular com NFC</strong>
+            <p>Nokia lança o 6131, primeiro smartphone com NFC integrado.</p>
+          </div>
+        </div>
+        <div class="tl-item reveal">
+          <div class="tl-dot"></div>
+          <div class="tl-year">2011</div>
+          <div class="tl-content">
+            <strong>Android Beam</strong>
+            <p>Google lança o Android Beam com suporte a NFC nativo.</p>
+          </div>
+        </div>
+        <div class="tl-item reveal">
+          <div class="tl-dot"></div>
+          <div class="tl-year">2014</div>
+          <div class="tl-content">
+            <strong>Apple Pay</strong>
+            <p>Apple lança o Apple Pay com NFC, popularizando pagamentos por aproximação.</p>
+          </div>
+        </div>
+        <div class="tl-item reveal">
+          <div class="tl-dot"></div>
+          <div class="tl-year">2024</div>
+          <div class="tl-content">
+            <strong>Expansão global</strong>
+            <p>Mais de 2 bilhões de dispositivos com NFC em uso no mundo.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FUTURO -->
+    <section id="futuro" class="alt">
+      <div class="section-inner">
+        <div class="section-text reveal">
+          <h2>Futuro do NFC</h2>
+          <p>As perspectivas para o NFC são bastante promissoras. A adoção de pagamentos por aproximação vem crescendo exponencialmente, principalmente após a pandemia de COVID-19.</p>
+          <ul>
+            <li><strong>Automóveis:</strong> Destravamento de portas e ignição de veículos.</li>
+            <li><strong>Saúde:</strong> Armazenamento de informações médicas e prontuários.</li>
+            <li><strong>Casas inteligentes:</strong> Automatização de rotinas domésticas.</li>
+            <li><strong>Eventos e transporte:</strong> Controle de acesso e bilhetagem eletrônica.</li>
+          </ul>
+          <p>O futuro do NFC caminha para a integração total no dia a dia, com forte tendência de expansão nos próximos anos.</p>
+        </div>
+        <div class="section-img reveal">
+          <img src="img/futuro.jpeg" alt="Futuro do NFC">
+        </div>
+      </div>
+    </section>
+
+    <!-- CONCLUSÃO -->
+    <section id="conclusao">
+      <div class="section-inner reverse">
+        <div class="section-text reveal">
+          <h2>Conclusão</h2>
+          <p>A tecnologia NFC revolucionou a maneira como interagimos com dispositivos e realizamos transações no dia a dia. Seu funcionamento simples, seguro e rápido permite aplicações que vão desde pagamentos até automação residencial.</p>
+          <p>Apesar dos desafios de segurança, as soluções existentes garantem proteção adequada quando aliadas às boas práticas. O NFC já está consolidado como tecnologia essencial para a mobilidade digital.</p>
+        </div>
+        <div class="section-img reveal">
+          <img src="img/conclusao.jpeg" alt="Conclusão sobre NFC">
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ ACCORDION -->
+    <section id="perguntas" class="alt">
+      <div class="section-text reveal" style="text-align:center;margin-bottom:40px">
+        <h2>Perguntas Frequentes</h2>
+      </div>
+      <div class="faq reveal">
+        <div class="faq-item">
+          <button class="faq-q">O que significa NFC? <span class="faq-icon">+</span></button>
+          <div class="faq-a">NFC significa Near Field Communication, ou Comunicação por Campo de Proximidade.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q">O NFC precisa de internet? <span class="faq-icon">+</span></button>
+          <div class="faq-a">Não. O NFC funciona localmente, sem necessidade de conexão com a internet.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q">É seguro usar pagamentos via NFC? <span class="faq-icon">+</span></button>
+          <div class="faq-a">Sim. É considerado seguro devido ao curto alcance e uso de criptografia, além de autenticação biométrica nos smartphones.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q">O NFC gasta muita bateria? <span class="faq-icon">+</span></button>
+          <div class="faq-a">Não. O consumo de energia é extremamente baixo, especialmente comparado ao Bluetooth.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q">Posso ser hackeado só por ter o NFC ativado? <span class="faq-icon">+</span></button>
+          <div class="faq-a">As chances são mínimas, pois é necessário que alguém esteja a poucos centímetros do seu dispositivo, além dos sistemas de segurança existentes.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q">Quais celulares têm NFC? <span class="faq-icon">+</span></button>
+          <div class="faq-a">A maioria dos smartphones intermediários e premium possui NFC. Verifique nas configurações do seu aparelho.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- QUIZ -->
+    <section id="quiz">
+      <div class="section-text reveal" style="text-align:center;margin-bottom:40px">
+        <h2>Quiz — Você sabe tudo sobre NFC?</h2>
+        <p>Responda 5 perguntas e descubra seu nível de conhecimento!</p>
+      </div>
+      <div class="quiz-box reveal" id="quizBox">
+        <div class="quiz-progress">
+          <div class="quiz-progress-bar" id="quizProgressBar"></div>
+        </div>
+        <div id="quizContent"></div>
+      </div>
+    </section>
+
+    <!-- REFERÊNCIAS -->
+    <section id="referencias" class="alt">
+      <div class="reveal">
+        <h2>Referências</h2>
+        <ol>
+          <li>RUIZ, R. <em>NFC - Comunicação por aproximação.</em> Revista Tecnologia Digital, 2021.</li>
+          <li>MELO, F. <em>Segurança em Tecnologias Sem Fio.</em> São Paulo: Editora Tech, 2022.</li>
+          <li>GOMES, A.; SANTOS, L. <em>Aplicações de NFC na Indústria e no Cotidiano.</em> IEEE Conference Proceedings, 2020.</li>
+          <li>KUMAR, A. <em>Near Field Communication: Principles and Applications.</em> Wiley, 2013.</li>
+          <li>GOOGLE ACADÊMICO. Diversos artigos sobre NFC, acessados em 2025.</li>
+        </ol>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>© 2025 — Site desenvolvido para disciplina de Redes de Computadores</p>
+    <p class="nomes">João Pedro Lima Barbosa | Marcos André Soares | Rodolfo Dheymison Silva</p>
+  </footer>
+
+  <!-- BOTÃO VOLTAR AO TOPO -->
+  <button class="back-top" id="backTop" aria-label="Voltar ao topo">↑</button>
+
+  <script>
+document.addEventListener('DOMContentLoaded', () => {
+
+  /* ── RELOAD ── */
+  document.getElementById('reloadBtn')?.addEventListener('click', () => {
+    location.reload();
+  });
+
+  /* ── MENU MOBILE ── */
+  const burger = document.getElementById('burger');
+  const nav    = document.getElementById('nav');
+
+  burger?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    nav.classList.toggle('open');
+  });
+
+  nav?.querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', () => nav.classList.remove('open'));
+  });
+
+  document.addEventListener('click', e => {
+    if (nav && burger && !nav.contains(e.target) && !burger.contains(e.target)) {
+      nav.classList.remove('open');
+    }
+  });
+
+  /* ── MODO ESCURO ── */
+  const themeBtn = document.getElementById('themeBtn');
+  const html     = document.documentElement;
+
+  // Aplica tema salvo ou padrão claro
+  const saved = localStorage.getItem('theme') || 'light';
+  html.setAttribute('data-theme', saved);
+  if (themeBtn) themeBtn.textContent = saved === 'dark' ? '☀️' : '🌙';
+
+  themeBtn?.addEventListener('click', () => {
+    const current = html.getAttribute('data-theme');
+    const next    = current === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    themeBtn.textContent = next === 'dark' ? '☀️' : '🌙';
+    localStorage.setItem('theme', next);
+  });
+
+  /* ── BARRA DE PROGRESSO ── */
+  const progressBar = document.getElementById('progressBar');
+  window.addEventListener('scroll', () => {
+    const total   = document.body.scrollHeight - window.innerHeight;
+    const current = window.scrollY;
+    if (progressBar && total > 0) {
+      progressBar.style.width = (current / total * 100) + '%';
+    }
+  }, { passive: true });
+
+  /* ── BOTÃO VOLTAR AO TOPO ── */
+  const backTop = document.getElementById('backTop');
+  window.addEventListener('scroll', () => {
+    backTop?.classList.toggle('show', window.scrollY > 400);
+  }, { passive: true });
+  backTop?.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  /* ── LINK ATIVO NO SCROLL ── */
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('nav a[href^="#"]');
+  const secObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(link => {
+          link.classList.toggle('active', link.getAttribute('href') === '#' + entry.target.id);
+        });
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => secObserver.observe(s));
+
+  /* ── REVEAL ON SCROLL ── */
+  const revealEls = document.querySelectorAll('.reveal');
+  revealEls.forEach(el => el.classList.add('hidden'));
+  const revObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.remove('hidden');
+        entry.target.classList.add('vis');
+        revObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+  revealEls.forEach(el => revObserver.observe(el));
+
+  /* ── COUNTERS (STATS) ── */
+  const statNums = document.querySelectorAll('.stat-num');
+
+  function animateCounter(el) {
+    const target  = parseFloat(el.dataset.target);
+    const isFloat = !Number.isInteger(target);
+    let current   = 0;
+    const duration = 1200; // ms
+    const steps    = 60;
+    const step     = target / steps;
+    const interval = Math.round(duration / steps);
+
+    // Garante que começa do zero visualmente
+    el.textContent = isFloat ? '0.00' : '0';
+
+    const timer = setInterval(() => {
+      current += step;
+      if (current >= target) {
+        current = target;
+        clearInterval(timer);
+      }
+      el.textContent = isFloat
+        ? current.toFixed(2)
+        : Math.floor(current).toLocaleString('pt-BR');
+    }, interval);
+  }
+
+  if (statNums.length) {
+    const countObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          animateCounter(entry.target);
+          countObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.3 });
+    statNums.forEach(el => countObserver.observe(el));
+  }
+
+  /* ── FAQ ACCORDION ── */
+  document.querySelectorAll('.faq-item').forEach(item => {
+    const btn = item.querySelector('.faq-q');
+    btn?.addEventListener('click', () => {
+      const isOpen = item.classList.contains('open');
+      // Fecha todos
+      document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+      // Abre o clicado se estava fechado
+      if (!isOpen) item.classList.add('open');
+    });
+  });
+
+  /* ── QUIZ ── */
+  const questions = [
+    {
+      q: 'Qual é a frequência de operação do NFC?',
+      opts: ['2.4 GHz', '13.56 MHz', '900 MHz', '5 GHz'],
+      correct: 1,
+      explain: 'O NFC opera na frequência de 13,56 MHz, padronizada internacionalmente.'
+    },
+    {
+      q: 'Qual é o alcance máximo típico do NFC?',
+      opts: ['1 metro', '10 metros', '10 centímetros', '50 centímetros'],
+      correct: 2,
+      explain: 'O NFC funciona normalmente em até 10 centímetros de distância.'
+    },
+    {
+      q: 'Quais empresas desenvolveram o NFC juntas em 2002?',
+      opts: ['Apple e Google', 'Nokia e Motorola', 'Sony e Philips', 'Samsung e Intel'],
+      correct: 2,
+      explain: 'Sony e Philips criaram o padrão NFC em 2002, depois padronizado pelo NFC Forum.'
+    },
+    {
+      q: 'O NFC precisa de conexão com a internet para funcionar?',
+      opts: ['Sim, sempre', 'Só em pagamentos', 'Não, funciona localmente', 'Depende do dispositivo'],
+      correct: 2,
+      explain: 'O NFC é uma comunicação local e não depende de internet.'
+    },
+    {
+      q: 'Qual ataque consiste em criar uma conexão falsa entre leitor e vítima distante?',
+      opts: ['Skimming', 'Relay Attack', 'Eavesdropping', 'Clonagem'],
+      correct: 1,
+      explain: 'O Relay Attack cria uma ponte falsa para usar o NFC de uma vítima à distância.'
+    }
+  ];
+
+  let current = 0, score = 0, answered = false;
+  const box          = document.getElementById('quizBox');
+  const progressBar2 = document.getElementById('quizProgressBar');
+
+  function renderQuestion() {
+    if (!box) return;
+    answered = false;
+    const q   = questions[current];
+    const pct = (current / questions.length) * 100;
+    if (progressBar2) progressBar2.style.width = pct + '%';
+
+    document.getElementById('quizContent').innerHTML = `
+      <div class="quiz-q-num">Pergunta ${current + 1} de ${questions.length}</div>
+      <div class="quiz-q-text">${q.q}</div>
+      <div class="quiz-options">
+        ${q.opts.map((opt, i) => `
+          <button class="quiz-opt" data-i="${i}">${opt}</button>
+        `).join('')}
+      </div>
+      <div class="quiz-feedback" id="qFeedback" style="display:none"></div>
+    `;
+
+    box.querySelectorAll('.quiz-opt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (answered) return;
+        answered = true;
+        const chosen   = parseInt(btn.dataset.i);
+        const correct  = q.correct;
+        const feedback = document.getElementById('qFeedback');
+
+        box.querySelectorAll('.quiz-opt').forEach(b => {
+          b.disabled = true;
+          if (parseInt(b.dataset.i) === correct) b.classList.add('correct');
+        });
+
+        if (chosen === correct) {
+          score++;
+          btn.classList.add('correct');
+          feedback.className = 'quiz-feedback ok';
+          feedback.textContent = '✓ Correto! ' + q.explain;
+        } else {
+          btn.classList.add('wrong');
+          feedback.className = 'quiz-feedback err';
+          feedback.textContent = '✗ Incorreto. ' + q.explain;
+        }
+        feedback.style.display = 'block';
+
+        const nextBtn = document.createElement('button');
+        nextBtn.className = 'quiz-next';
+        nextBtn.textContent = current < questions.length - 1 ? 'Próxima →' : 'Ver resultado →';
+        nextBtn.addEventListener('click', () => {
+          current++;
+          if (current < questions.length) renderQuestion();
+          else renderResult();
+        });
+        document.getElementById('quizContent').appendChild(nextBtn);
+      });
+    });
+  }
+
+  function renderResult() {
+    if (!box) return;
+    if (progressBar2) progressBar2.style.width = '100%';
+    const pct   = Math.round((score / questions.length) * 100);
+    const level = pct === 100 ? '🏆 Expert em NFC!' : pct >= 60 ? '👍 Bom conhecimento!' : '📚 Continue estudando!';
+
+    document.getElementById('quizContent').innerHTML = `
+      <div class="quiz-result">
+        <div>Você acertou</div>
+        <div class="score">${score}/${questions.length}</div>
+        <div class="score-label">${pct}% de aproveitamento</div>
+        <div class="level">${level}</div>
+        <button class="quiz-restart" id="quizRestart">Tentar novamente</button>
+      </div>
+    `;
+
+    document.getElementById('quizRestart')?.addEventListener('click', () => {
+      current = 0; score = 0;
+      if (progressBar2) progressBar2.style.width = '0%';
+      renderQuestion();
+    });
+  }
+
+  if (box) renderQuestion();
+
+}); // fim DOMContentLoaded
+  </script>
+</body>
+</html>
